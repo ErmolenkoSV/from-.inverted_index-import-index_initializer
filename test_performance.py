@@ -93,5 +93,93 @@ class TestIndexingPerformance(unittest.TestCase):
             print(f"  Время выполнения: {elapsed:.4f} сек")
             self.assertLess(elapsed, 0.5)
 
+
+import unittest
+from inverted_index import InvertedIndex  # Предполагается, что у вас есть модуль inverted_index с реализацией
+
+class TestInvertedIndex(unittest.TestCase):
+    def setUp(self):
+        # Создаем тестовые данные
+        self.test_docs = {
+            "doc1": "Ректор СПбГУ объявил о новых исследованиях",
+            "doc2": "В МГУ прошла конференция по искусственному интеллекту",
+            "doc3": "СПбГУ и МГУ сотрудничают в области образования"
+        }
+        self.index = InvertedIndex()
+
+    def test_build_index(self):
+        # Тест на создание инвертированного индекса
+        self.index.build_index(self.test_docs)
+        self.assertIn("Ректор", self.index.index)
+        self.assertIn("СПбГУ", self.index.index)
+        self.assertIn("МГУ", self.index.index)
+
+    def test_search_query(self):
+        # Тест на поиск по запросу
+        self.index.build_index(self.test_docs)
+        results = self.index.search("Ректор СПбГУ")
+        self.assertEqual(results, ["doc1"])
+
+    def test_compression(self):
+        # Тест на сжатие индекса
+        self.index.build_index(self.test_docs)
+        original_size = self.index.get_index_size()
+        self.index.apply_compression()
+        compressed_size = self.index.get_index_size()
+        self.assertLess(compressed_size, original_size)
+
+    def test_compression_efficiency(self):
+        # Тест на эффективность сжатия
+        self.index.build_index(self.test_docs)
+        original_size = self.index.get_index_size()
+        self.index.apply_compression()
+        compressed_size = self.index.get_index_size()
+        efficiency = (original_size - compressed_size) / original_size
+        self.assertGreater(efficiency, 0.5)  # Ожидаем, что сжатие уменьшит размер хотя бы на 50%
+
+    def test_search_speed(self):
+        # Тест на скорость поиска
+        import time
+        self.index.build_index(self.test_docs)
+        start_time = time.time()
+        self.index.search("Ректор СПбГУ")
+        search_time = time.time() - start_time
+        self.assertLess(search_time, 0.1)  # Ожидаем, что поиск займет менее 0.1 секунды
+
+    def test_large_dataset_indexing(self):
+        # Тест на индексирование большого набора данных
+        large_docs = {f"doc{i}": "СПбГУ МГУ" for i in range(40000)}
+        start_time = time.time()
+        self.index.build_index(large_docs)
+        indexing_time = time.time() - start_time
+        self.assertLess(indexing_time, 60)  # Ожидаем, что индексирование займет менее 60 секунд
+
+    def test_compression_large_dataset(self):
+        # Тест на сжатие большого набора данных
+        large_docs = {f"doc{i}": "СПбГУ МГУ" for i in range(40000)}
+        self.index.build_index(large_docs)
+        original_size = self.index.get_index_size()
+        self.index.apply_compression()
+        compressed_size = self.index.get_index_size()
+        self.assertLess(compressed_size, original_size)
+
+    def test_search_large_dataset(self):
+        # Тест на поиск в большом наборе данных
+        large_docs = {f"doc{i}": "СПбГУ МГУ" for i in range(40000)}
+        self.index.build_index(large_docs)
+        start_time = time.time()
+        self.index.search("Ректор СПбГУ")
+        search_time = time.time() - start_time
+        self.assertLess(search_time, 0.5)  # Ожидаем, что поиск займет менее 0.5 секунды
+
+    def test_index_consistency(self):
+        # Тест на согласованность индекса после сжатия
+        self.index.build_index(self.test_docs)
+        original_index = self.index.index.copy()
+        self.index.apply_compression()
+        self.assertEqual(self.index.index, original_index)
+
+  
+
 if __name__ == '__main__':
     unittest.main()
